@@ -1,12 +1,13 @@
 # TLS Bootstrapping Worker Nodes
 
 In the previous step we configured a worker node by
+
 - Creating a set of key pairs for the worker node by ourself
 - Getting them signed by the CA by ourself
 - Creating a kube-config file using this certificate by ourself
 - Everytime the certificate expires we must follow the same process of updating the certificate by ourself
 
-This is not a practical approach when you have 1000s of nodes in the cluster, and nodes dynamically being added and removed from the cluster.  With TLS boostrapping:
+This is not a practical approach when you have 1000s of nodes in the cluster, and nodes dynamically being added and removed from the cluster. With TLS boostrapping:
 
 - The Nodes can generate certificate key pairs by themselves
 - The Nodes can generate certificate signing request by themselves
@@ -49,9 +50,9 @@ scp ca.crt worker-2:~/
 
 ```
 wget -q --show-progress --https-only --timestamping \
-  https://storage.googleapis.com/kubernetes-release/release/v1.13.0/bin/linux/amd64/kubectl \
-  https://storage.googleapis.com/kubernetes-release/release/v1.13.0/bin/linux/amd64/kube-proxy \
-  https://storage.googleapis.com/kubernetes-release/release/v1.13.0/bin/linux/amd64/kubelet
+  https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl \
+  https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kube-proxy \
+  https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubelet
 ```
 
 Reference: https://kubernetes.io/docs/setup/release/#node-binaries
@@ -76,6 +77,7 @@ Install the worker binaries:
   sudo mv kubectl kube-proxy kubelet /usr/local/bin/
 }
 ```
+
 ### Move the ca certificate
 
 `sudo mv ca.crt /var/lib/kubernetes/`
@@ -119,11 +121,12 @@ stringData:
 EOF
 
 
-kubectl create -f bootstrap-token-07401b.yaml
+kubectl create -f bootstrap-token-07401b.yaml --kubeconfig admin.kubeconfig
 
 ```
 
 Things to note:
+
 - **expiration** - make sure its set to a date in the future.
 - **auth-extra-groups** - this is the group the worker nodes are part of. It must start with "system:bootstrappers:" This group does not exist already. This group is associated with this token.
 
@@ -160,9 +163,11 @@ EOF
 kubectl create -f csrs-for-bootstrapping.yaml
 
 ```
+
 Reference: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet-tls-bootstrapping/#authorize-kubelet-to-create-csr
 
 ## Step 3 Authorize workers(kubelets) to approve CSR
+
 ```
 kubectl create clusterrolebinding auto-approve-csrs-for-group --clusterrole=system:certificates.k8s.io:certificatesigningrequests:nodeclient --group=system:bootstrappers
 
@@ -324,6 +329,7 @@ EOF
 ```
 
 Things to note here:
+
 - **bootstrap-kubeconfig**: Location of the bootstrap-kubeconfig file.
 - **cert-dir**: The directory where the generated certificates are stored.
 - **rotate-certificates**: Rotates client certificates when they expire.
@@ -378,8 +384,8 @@ EOF
   sudo systemctl start kubelet kube-proxy
 }
 ```
-> Remember to run the above commands on worker node: `worker-2`
 
+> Remember to run the above commands on worker node: `worker-2`
 
 ## Step 9 Approve Server CSR
 
@@ -389,7 +395,6 @@ EOF
 NAME                                                   AGE   REQUESTOR                 CONDITION
 csr-95bv6                                              20s   system:node:worker-2      Pending
 ```
-
 
 Approve
 
@@ -412,6 +417,7 @@ NAME       STATUS   ROLES    AGE   VERSION
 worker-1   NotReady   <none>   93s   v1.13.0
 worker-2   NotReady   <none>   93s   v1.13.0
 ```
+
 Note: It is OK for the worker node to be in a NotReady state. That is because we haven't configured Networking yet.
 
 Next: [Configuring Kubectl](11-configuring-kubectl.md)
